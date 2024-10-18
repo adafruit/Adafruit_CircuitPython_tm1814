@@ -47,7 +47,7 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = "Adafruit CircuitPython tm1814 Library"
+project = "Adafruit CircuitPython TM1814 Library"
 creation_year = "2024"
 current_year = str(datetime.datetime.now().year)
 year_duration = (
@@ -124,7 +124,7 @@ html_static_path = ["_static"]
 html_favicon = "_static/favicon.ico"
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = "Adafruit_CircuitPython_Tm1814_Librarydoc"
+htmlhelp_basename = "Adafruit_CircuitPython_TM1814_Librarydoc"
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -145,8 +145,8 @@ latex_elements = {
 latex_documents = [
     (
         master_doc,
-        "Adafruit_CircuitPython_tm1814_Library.tex",
-        "Adafruit CircuitPython tm1814 Library Documentation",
+        "Adafruit_CircuitPython_TM1814_Library.tex",
+        "Adafruit CircuitPython TM1814 Library Documentation",
         author,
         "manual",
     ),
@@ -159,8 +159,8 @@ latex_documents = [
 man_pages = [
     (
         master_doc,
-        "Adafruit_CircuitPython_tm1814_Library",
-        "Adafruit CircuitPython tm1814 Library Documentation",
+        "Adafruit_CircuitPython_TM1814_Library",
+        "Adafruit CircuitPython TM1814 Library Documentation",
         [author],
         1,
     ),
@@ -174,10 +174,10 @@ man_pages = [
 texinfo_documents = [
     (
         master_doc,
-        "Adafruit_CircuitPython_tm1814_Library",
-        "Adafruit CircuitPython tm1814 Library Documentation",
+        "Adafruit_CircuitPython_TM1814_Library",
+        "Adafruit CircuitPython TM1814 Library Documentation",
         author,
-        "Adafruit_CircuitPython_tm1814_Library",
+        "Adafruit_CircuitPython_TM1814_Library",
         "One line description of project.",
         "Miscellaneous",
     ),

@@ -12,8 +12,8 @@ Introduction
     :alt: Discord
 
 
-.. image:: https://github.com/adafruit/Adafruit_CircuitPython_tm1814/workflows/Build%20CI/badge.svg
-    :target: https://github.com/adafruit/Adafruit_CircuitPython_tm1814/actions
+.. image:: https://github.com/adafruit/Adafruit_CircuitPython_TM1814/workflows/Build%20CI/badge.svg
+    :target: https://github.com/adafruit/Adafruit_CircuitPython_TM1814/actions
     :alt: Build Status
 
 
@@ -93,5 +93,5 @@ Contributing
 ============
 
 Contributions are welcome! Please read our `Code of Conduct
-<https://github.com/adafruit/Adafruit_CircuitPython_tm1814/blob/HEAD/CODE_OF_CONDUCT.md>`_
+<https://github.com/adafruit/Adafruit_CircuitPython_TM1814/blob/HEAD/CODE_OF_CONDUCT.md>`_
 before contributing to help this project stay welcoming.
