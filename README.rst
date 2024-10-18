@@ -2,7 +2,7 @@ Introduction
 ============
 
 
-.. image:: https://readthedocs.org/projects/adafruit-circuitpython-tm1814/badge/?version=latest
+.. image:: https://readthedocs.org/projects/circuitpython-tm1814/badge/?version=latest
     :target: https://docs.circuitpython.org/projects/tm1814/en/latest/
     :alt: Documentation Status
 
