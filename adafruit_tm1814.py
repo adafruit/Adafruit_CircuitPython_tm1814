@@ -34,31 +34,7 @@ from rp2pio import StateMachine
 # Datasheet high times for a "1" bit are 650 (min) 720 (typ) 1000 (max) ns
 #
 # Operating PIO at 14x the bit clock lets us achieve nominal 357ns and 714ns
-_program = Program(
-    f"""
-.side_set 1
-.wrap_target
-    pull block          side 1
-    out y, 32           side 1      ; get count of pixel bits
-
-bitloop:
-    pull ifempty        side 1      ; drive low
-    out x 1             side 1 [4]
-    jmp !x do_zero      side 0 [3]  ; drive low and branch depending on bit val
-    jmp y--, bitloop    side 0 [3]  ; drive low for a one (long pulse)
-    jmp end_sequence    side 1      ; sequence is over
-
-do_zero:
-    jmp y--, bitloop    side 1 [3]  ; drive high for a zero (short pulse)
-
-end_sequence:
-    pull block          side 1      ; get fresh delay value
-    out y, 32           side 1      ; get delay count
-wait_reset:
-    jmp y--, wait_reset side 1      ; wait until delay elapses
-.wrap
-        """
-)
+_pio_source = ()
 
 TM1814_MIN_CURRENT = 6.5
 TM1814_MAX_CURRENT = 38
@@ -101,6 +77,7 @@ class TM1814PixelBackground(  # pylint: disable=too-few-public-methods
       below.
     :param str pixel_order: Set the pixel color channel order. WRGB is set by
       default. Only 4-bytes-per-pixel formats are supported.
+    :param bool inverted: True to invert the polarity of the output signal.
     """
 
     def __init__(  # noqa: PLR0913
@@ -111,9 +88,34 @@ class TM1814PixelBackground(  # pylint: disable=too-few-public-methods
         brightness: float = 1.0,
         pixel_order: str = "WRGB",
         current_control: float | tuple[float, float, float, float] = 38.0,
+        inverted: bool = False,
     ):
         if len(pixel_order) != 4:
             raise ValueError("Invalid pixel_order")
+
+        _program = Program(f"""
+    .side_set 1
+    .wrap_target
+        pull block          side {not inverted:1d}
+        out y, 32           side {not inverted:1d}      ; get count of pixel bits
+
+    bitloop:
+        pull ifempty        side {not inverted:1d}      ; drive low
+        out x 1             side {not inverted:1d} [4]
+        jmp !x do_zero      side {inverted:1d}     [3]  ; drive low and branch depending on bit val
+        jmp y--, bitloop    side {inverted:1d}     [3]  ; drive low for a one (long pulse)
+        jmp end_sequence    side {not inverted:1d}      ; sequence is over
+
+    do_zero:
+        jmp y--, bitloop    side {not inverted:1d} [3]  ; drive high for a zero (short pulse)
+
+    end_sequence:
+        pull block          side {not inverted:1d}      ; get fresh delay value
+        out y, 32           side {not inverted:1d}      ; get delay count
+    wait_reset:
+        jmp y--, wait_reset side {not inverted:1d}      ; wait until delay elapses
+    .wrap
+            """)
 
         byte_count = 4 * n
         bit_count = byte_count * 8 + 64  # count the 64 brightness bits
