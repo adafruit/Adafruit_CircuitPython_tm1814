@@ -60,25 +60,68 @@ wait_reset:
         """
 )
 
+TM1814_MIN_CURRENT = 6.5
+TM1814_MAX_CURRENT = 38
+TM1814_CURRENT_SCALE = 2
 
-def _convert_brightness(x):
-    x = int(x * 63) + 13
-    x |= x << 8
-    return x | (x << 16)
+
+def _convert_one_current(value):
+    if value < TM1814_MIN_CURRENT or value > TM1814_MAX_CURRENT:
+        raise ValueError("Current control out of range")
+    return round((value - TM1814_MIN_CURRENT) * TM1814_CURRENT_SCALE)
+
+
+def _current_control_word(arg):
+    if isinstance(arg, (int, float)):
+        arg = arg, arg, arg, arg
+    result = [_convert_one_current(value) for value in arg]
+    result += [value ^ 0xFF for value in result]
+    return result
 
 
 class TM1814PixelBackground(  # pylint: disable=too-few-public-methods
     adafruit_pixelbuf.PixelBuf
 ):
-    def __init__(self, pin, n, *, brightness=1.0, pixel_order="WRGB"):
+    """
+    A sequence of TM1814 addressable pixels
+
+    Except as noted, provides all the functionality of
+    `adafruit_pixelbuf.PixelBuf`, particularly
+    `adafruit_pixelbuf.PixelBuf.fill` and
+    `adafruit_pixelbuf.PixelBuf.__setitem__`.
+
+    As the strip always auto-written, there is no need to call the `show` method.
+
+    :param ~microcontroller.Pin pin: The pin to output neopixel data on.
+    :param int n: The number of neopixels in the chain
+    :param float brightness: Brightness of the pixels between 0.0 and 1.0 where 1.0 is full
+      brightness. This brightness value is software-multiplied with raw pixel values.
+    :param float|tuple[float,float,float] current_control: TM1814 current
+      control register. See documentation of the ``current_control`` property
+      below.
+    :param str pixel_order: Set the pixel color channel order. WRGB is set by
+      default. Only 4-bytes-per-pixel formats are supported.
+    """
+
+    def __init__(  # noqa: PLR0913
+        self,
+        pin,
+        n: int,
+        *,
+        brightness: float = 1.0,
+        pixel_order: str = "WRGB",
+        current_control: float | tuple[float, float, float, float] = 38.0,
+    ):
+        if len(pixel_order) != 4:
+            raise ValueError("Invalid pixel_order")
+
         byte_count = 4 * n
         bit_count = byte_count * 8 + 64  # count the 64 brightness bits
 
-        self._brightness = brightness
-        raw_brightness = _convert_brightness(brightness)
+        self._current_control = current_control
 
         # backwards, so that dma byteswap corrects it!
-        header = struct.pack(">LLL", bit_count - 1, raw_brightness, raw_brightness ^ 0xFFFFFFFF)
+        header = struct.pack(">L8B", bit_count - 1, *_current_control_word(current_control))
         trailer = struct.pack(">L", 38400)  # Delay is about 3ms
 
         self._sm = StateMachine(
@@ -94,14 +137,42 @@ class TM1814PixelBackground(  # pylint: disable=too-few-public-methods
         self._buf = None
         super().__init__(
             n,
-            brightness=1.0,
+            brightness=brightness,
             byteorder=pixel_order,
             auto_write=False,
             header=header,
             trailer=trailer,
         )
 
-        self.show()
+        super().show()
+
+    def show(self) -> None:
+        """Does nothing, because the strip is always auto-written"""
+
+    @property
+    def current_control(self) -> float | tuple[float, float, float, float]:
+        """Access the current control register of the TM1814
+
+        The TM1814 has a per-channel current control register that is shared across
+        the entire strip.
+
+        The current regulation range is from 6.5mA to 38mA in 0.5mA increments.
+        Out of range values will throw ValueError.
+
+        The relationship between human perception & LED current value is highly
+        nonlinear: The lowest setting may appear only slightly less bright than the
+        brightest setting, not 6x brighter as you might expect.
+
+        If this property is set to a single number, then the same value is used for
+        each channel. Otherwise, it must be a tuple of 4 elements where each element
+        is applied to a different channel.
+        """
+        return self._current_control
+
+    @current_control.setter
+    def current_control(self, value: float | tuple[float, float, float]) -> None:
+        struct.pack_into("8B", self._buf, 4, *_current_control_word(value))
+        self._current_control = value
 
     def deinit(self) -> None:
         """Deinitialize the object"""
@@ -118,11 +189,6 @@ class TM1814PixelBackground(  # pylint: disable=too-few-public-methods
     @auto_write.setter
     def auto_write(self, value: bool) -> None:
         pass
-
-    @property
-    def brightness(self) -> float:
-        """Returns the strip brightness (read-only)"""
-        return self._brightness
 
     def _transmit(self, buf: bytes) -> None:
         self._buf = buf
